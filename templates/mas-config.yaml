@@ -5,16 +5,28 @@
 http:
   listeners:
     - name: web
-      bind: "0.0.0.0:8080"
-      proxy_protocol: false
       resources:
         - name: discovery
         - name: human
         - name: oauth
         - name: compat
         - name: graphql
-          playground: false
         - name: assets
+      binds:
+        - address: '[::]:8080'
+    - name: internal
+      resources:
+        - name: health
+      binds:
+        - address: '127.0.0.1:8081'
+
+  # Trust X-Forwarded-For from Caddy (RFC 1918 + loopback)
+  trusted_proxies:
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"
+    - "127.0.0.1/8"
+    - "::1/128"
 
 # Database configuration
 database:
@@ -25,6 +37,9 @@ database:
   # Connection pool settings
   min_connections: 5
   max_connections: 10
+  connect_timeout: 30
+  idle_timeout: 600
+  max_lifetime: 1800
 
 # Secrets configuration
 secrets:
@@ -45,6 +60,7 @@ secrets:
 # Matrix homeserver configuration
 matrix:
   homeserver: "{{MATRIX_DOMAIN}}"
+  kind: synapse
   # Secret token for MAS to call Synapse admin APIs
   # MUST match 'secret' in matrix_authentication_service config in homeserver.yaml (Synapse 1.136+)
   secret: "ThisTokenIsStaticallyConfiguredAndShouldNotBeUsedInProduction"
@@ -65,24 +81,24 @@ passwords:
   enabled: true
   schemes:
     - version: 1
-      algorithm: "bcrypt"
+      algorithm: "argon2id"
+      minimum_complexity: 3
 
 # Registration settings
-# matrix.registration controls who can create new accounts
+# policy.registration controls who can create new accounts
 # If you want open registration, set enabled: true
 # For invite-only or admin-created users, set enabled: false
-# registration_requires_approval: true means admin must approve new accounts
-registration:
-  enabled: false
-  require_email: false
+policy:
+  registration:
+    enabled: false
+    require_email: false
 
 # Account management features
 account:
   email_change_allowed: true
   display_name_change_allowed: true
 
-# Policy URLs (optional)
-# policy:
+# Policy URLs (optional) — add under the existing policy: key above
 #   terms_of_service:
 #     url: "https://{{MATRIX_DOMAIN}}/terms"
 #   privacy_policy:

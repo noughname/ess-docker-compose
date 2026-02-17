@@ -722,6 +722,21 @@ docker compose exec postgres psql -U synapse -d mas -c \
 
 ---
 
+## Security Advisories
+
+### Synapse v1.147.1 — CVE-2026-24044
+
+Blocks federation requests using a known-compromised signing key. Pull and redeploy promptly:
+
+```bash
+docker compose pull synapse && docker compose up -d synapse
+# Verify: docker compose exec synapse synapse_homeserver --version
+```
+
+The compose file uses `latest`, so this is the only action needed.
+
+---
+
 ## Version-Specific Notes
 
 ### MAS v1.5.0
